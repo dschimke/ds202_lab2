@@ -1,0 +1,205 @@
+---
+title: "individual1"
+author: "Daniel Schimke"
+date: "9/19/2021"
+output: html_document
+---
+
+# Lab 2
+
+
+## Question 1
+
+```{r}
+
+library(classdata)
+library(ggplot2)
+library(tidyverse)
+
+ggplot(choco, aes(x=CocoaPercent)) + geom_histogram(color="black",fill="white")
+ggplot(choco, aes(x=CocoaPercent)) + geom_boxplot(outlier.colour = "red")
+
+```
+
+Both of these plots show that the average cocoa percent is around 70%. We can also see the distribution from the histogram that there is a normal distribution for the cocoa percent, although it is very steep. This also shows that there is not a large amount of variability when it comes to cocoa percent in chocolates, with almost all values lying between 60-80% cocoa. As far as outliers go, these are easiest to see in the boxplot. The outliers are the values that extend past the whiskers on the plot. On my chart, I have colored the outlier dots red so they can be seen easier, so anywhere there is a red dot on the boxplot, there is an outlier. 
+
+
+
+
+## Question 2
+
+```{r}
+#Simple tidyverse function to get the 10 most frequent countries of origin
+chocoMostFrequent <- choco %>% group_by(CountryBeanOrigin) %>% summarise(n()) %>% top_n(10)
+
+ggplot(choco, aes(x=CountryBeanOrigin)) + geom_bar() + coord_flip() + ggtitle("Number of Ratings per Country of Origin")
+ggplot(chocoMostFrequent, aes(x=reorder(CountryBeanOrigin, `n()`), y=`n()`)) + geom_bar(stat="identity") + coord_flip() + xlab("Country of Bean Origin") + ylab("Count") + ggtitle("Top 10 Countries of Bean Origin")
+```
+
+We can see that when we plot all of the countries of origin in the same chart, there are way too many values and nothing can be made from that chart. I decided to plot the 10 countries of origin that have the most ratings. Looking at this list of countries, a few things can be seen from them. These are countries that are typically thought of when discussing which countries have a lot of forests and produce a large amount of cocoa beans and similar products. We can also tell this from a geographical standpoint as most of these countries are from Latin America with the exception of Madagascar. Of the countries of Latin America, these are the more major ones, so it makes sense that they are the ones that have the most ratings. They are able to produce more than the other countries in the area as well as other places in the world.
+
+
+## Question 3
+
+```{r}
+
+chocoRated <- choco
+chocoRated$RatingValue[chocoRated$Rating >= 4.0] <- "Outstanding"
+chocoRated$RatingValue[chocoRated$Rating >= 3.5 & chocoRated$Rating < 4.0] <- "Highly Recommended"
+chocoRated$RatingValue[chocoRated$Rating >= 3.0 & chocoRated$Rating < 3.5] <- "Recommended"
+chocoRated$RatingValue[chocoRated$Rating >= 2.0 & chocoRated$Rating < 3.0] <- "Disappointing"
+chocoRated$RatingValue[chocoRated$Rating >= 1.0 & chocoRated$Rating < 2.0] <- "Unpleasant"
+
+summary(chocoRated[chocoRated$RatingValue=="Outstanding",]$CocoaPercent)
+summary(chocoRated[chocoRated$RatingValue=="Highly Recommended",]$CocoaPercent)
+summary(chocoRated[chocoRated$RatingValue=="Recommended",]$CocoaPercent)
+summary(chocoRated[chocoRated$RatingValue=="Disappointing",]$CocoaPercent)
+summary(chocoRated[chocoRated$RatingValue=="Unpleasant",]$CocoaPercent)
+
+chocoRated$RatingValue <- factor(chocoRated$RatingValue, levels=c("Outstanding","Highly Recommended", "Recommended", "Disappointing", "Unpleasant"))
+ggplot(chocoRated, aes(x=RatingValue,y=CocoaPercent)) + geom_boxplot() + ggtitle("Cocoa Percent by Ratings")
+
+ggplot(choco, aes(x=Rating,y=CocoaPercent, group=Rating)) + geom_boxplot() + ggtitle("Cocoa Percent by Rating Number")
+
+```
+
+
+
+A scatter plot would not be a good choice to visualize this data because the rating column is split up so that there is only a value every 0.25 so a scatter plot would only show lines of points on the plot making it very hard to read. This is why I elected to use boxplots for this. I first grouped all of the ratings into the 5 values shown in the documentation for the dataset. I then compared the means and ranges cocoa percentage for each of the 5 values. We can see there is a small increase in the cocoa percentage as the rating decreases, but there is nothing too significant until we reach the Unpleasant level (1-1.9 rating). This level has a much higher cocoa percentage than any of the other rating values. 
+
+The first plot is a boxplot of the 5 rating values compared to the cocoa percent. This shows the previous trend mentioned about all of the values being close except for the Unpleasant one. This may lead to the conclusion that a higher cocoa percentage make it more likely that the chocolate is going to be worse with a lower rating. We also can see that there is a smaller range of values in the boxplot as the rating value increases. There are also far less outliers for the Outstanding level compared to the others.
+
+The other plot goes back to the original values for Rating and creates a boxplot for them compared to cocoa percent. This creates a box for rating every 0.25 points. This will help get a better look at what was being looked at with the previous chart. We can again see how variable the cocoa percent is before the rating reaches 2-2.5. We can also see a trend that the box squeezes in and gets smaller as the ratings increase. This eventually leads to the top values having a very small box and almost no outliers. This leads to the conclusion that only chocolates around the average of 70% cocoa will get an outstanding rating while chocolates that have higher cocoa levels don't typically get high ratings. Several factors could lead to this occurence such as chocolates with less cocoa will have more sugar or other ingredients, which may lead to a higher rating.
+
+
+
+
+
+## Question 4
+
+```{r}
+
+flavors <- choco$Characteristics1
+flavors <- table(flavors)
+summary(as.numeric(flavors))
+```
+
+I decided to use only the first characteristic that a person mentioned because it was the most memorable and should be the flavor that the chocolate is known for. Looking at the summary for this data, we can see that there are a large number of flavors that are only mentioned once which will not be useful for analysis because there will be way too many values. 
+
+```{r}
+bestFlavors <- flavors[flavors > 40]
+length(bestFlavors)
+```
+
+After trying a few different values for the range, I decided to use only flavors that had more than 40 entries because they are significant with that many entries and still have enough different flavors to do good analysis. I will use the same 10 countries of origin as the second question so we can see the relationship clearly.
+
+```{r}
+topCountries <- (choco %>% group_by(CountryBeanOrigin) %>% summarise(n()) %>% top_n(10))$CountryBeanOrigin
+
+chocoBest <- choco %>% filter(CountryBeanOrigin %in% topCountries) %>% filter(Characteristics1 %in% names(bestFlavors))
+
+
+ggplot(chocoBest, aes(x=CountryBeanOrigin, fill=Characteristics1)) + geom_bar(position="fill") + coord_flip()
+
+```
+
+This chart is a good way to compare how each of the countries compare to each other in terms of the flavors. I chose to fill the position of this bar chart because we care about the proportions between the countries rather than how much they actually produce compared to each other. Using this chart, we can see the flavors of the chocolate based on the country it came from. We can see that some countries are better at producing certain flavors from their chocolate than others. For example, Brazil produces a large amount of chocolate that has a creamy flavor and Venezuela produces more chocolate that has a nutty flavor. This could have to do with the chocolate itself or the companies that buy chocolate from these countries. There is no way to tell looking at this information.
+
+
+
+For the second part of this question, we will compare the country of origin to the ratings of the chocolate. We will continue to use the top 10 countries of origin to ensure the plots are useful. 
+
+
+```{r}
+
+topChoco <- choco %>% filter(CountryBeanOrigin %in% topCountries)
+tapply(topChoco$Rating, topChoco$CountryBeanOrigin, summary) %>% head(10)
+```
+
+
+Just from looking at these numbers, it is hard to tell if there is any difference as the means and medians for these values are all very similar. We will do a boxplot to show if we can determine anything from that.
+
+
+```{r}
+ggplot(topChoco, aes(x=CountryBeanOrigin, Rating)) + geom_boxplot() + coord_flip()
+```
+
+
+This boxplot confirms the idea that there is almost no difference between where the cocoa comes from. Each of the boxes have small differences, and the only on that looks a little bit different is the blended cocoas have a slightly lower rating on average. Other than that, at least from the countries shown here, there is not enough difference in rating to determine that the country of origin has an effect on the rating of the chocolate.
+
+
+
+
+
+## Question 5
+
+### Analysis 1
+
+For my first analysis, I will look into the flavors again. This time I am going to compare the flavors to the ratings that they receive. This would show what types of flavors that the people rating the chocolates prefer and if there is a specific flavor that a company should be aiming for to get the most people to like their chocolate.
+
+
+I will use the same set of flavors that I used in the previous question as they were the most relevant and best to show the data. I will start by looking at the summary numbers for each of the flavors.
+
+```{r}
+chocoFlavors <- choco %>% filter(Characteristics1 %in% names(bestFlavors))
+
+tapply(chocoFlavors$Rating, chocoFlavors$Characteristics1, summary)
+```
+
+There are a few things that can be said about these values. They are mostly pretty similar when it comes to the means, but a few stand out such as dry and gritty having a slightly smaller rating on average than the others. This makes sense as those are not generally seen as good quality characteristics with foods, so that is the reason these have lower values.
+
+
+```{r}
+ggplot(chocoFlavors, aes(x=Characteristics1, Rating)) + geom_boxplot() + coord_flip()
+```
+
+From this plot of the flavors against the ratings, we can confirm some of the points that I made before. Gritty flavors is the flavor that particularly stands out as the having the lowest rating of the ones shown here. On the other end of the spectrum, creamy is the flavor that clearly has the highest rating of all of the flavors. This also makes sense as that is generally seen as one of the best qualities to look for in chocolate. Overall, many of the flavors have a similar rating to each other with the general trend that we would expect. A few flavors stand out such as gritty or sandy having lower overall ratings and others like creamy having a much higher average rating. This analysis shows that there is a relationship between the flavors and the ratings.
+
+
+
+
+### Analysis 2
+
+For my second analysis, I will try to compare and try to find a relationship between the location of the chocolate company and the rating the chocolate gets. This is an interesting topic to look into because, as consuumers, we can look at information like this and decide where we should be getting our chocolate from to get the best overall chocolates.
+
+We must first find out how many countries there are so we can determine if we are able to use all of them.
+
+```{r}
+locations <- choco$Location
+locations <- table(locations)
+length(locations)
+summary(as.numeric(locations))
+
+
+```
+
+There are 67 values so we will need to bring that down to a more realistic number
+
+```{r}
+bestCountries <- locations[locations > 40]
+```
+
+I decided to set the cutoff to countries with more than 40 companies because this left 10 countries which will easily be shown in a plot.
+
+
+```{r}
+chocoLocations <- choco %>% filter(Location %in% names(bestCountries))
+tapply(chocoLocations$Rating, chocoLocations$Location, summary)
+```
+
+We can see from this that there is some variability between these countries. Countries such as Switzerland and Australia have some slightly higher average ratings while the U.K. and Belgium have some lower average ratings.
+
+
+```{r}
+ggplot(chocoLocations, aes(x=Location, Rating)) + geom_boxplot() + coord_flip()
+```
+
+
+We can see from this plot that the U.K. and Ecuador have the lowest average ratings out of the countries shown. This makes sense to me logically because these countries are not really known for their chocolate as much as some of the others. Some of the other countries such as Switzerland, Canada, and Australia have some higher average ratings. These also make sense as these are very large chocolate countries, particularly Switzerland. Overall, these are the most popular and large chocolate countries so their average ratings are all very high, but there are some standouts on either side. If we looked at some other countries, I suspect that we would see this trend continue. There is clearly at least somewhat of a relationship between location and rating with countries that we would expect being higher and lower. 
+
+
+
+
+
+
+
